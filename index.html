@@ -3,31 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Enhanced Grammar Checker</title>
+    <title>Enhanced Grammar Checker PWA</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2A4B7C"> <!-- PWA Theme Color -->
+    <meta name="theme-color" content="#2A4B7C">
     <link rel="icon" href="images/icon-192.png" sizes="192x192" type="image/png">
     <link rel="apple-touch-icon" href="images/icon-192.png">
-    <meta name="description" content="Check text for grammar, spelling, and punctuation errors with diff highlighting, powered by Google Gemini.">
+    <meta name="description" content="Check text for grammar, spelling, and punctuation errors with diff highlighting and optional explanations, powered by Google Gemini.">
     <link rel="stylesheet" href="style.css">
-    <!-- Include jsdiff library (use a local copy for production/offline) -->
+    <!-- Local jsdiff library -->
     <script src="diff.min.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Grammar & Style Check</h1>
-            <button id="theme-toggle" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">☀️</button>
+            <button id="theme-toggle" class="header-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">☀️</button>
         </div>
 
         <form id="check-form">
             <div class="input-output-container">
                 <!-- Input Area -->
                 <div class="input-area">
-                    <label for="input-text" class="area-label">Your Text:</label>
+                    <div class="area-header">
+                         <label for="input-text" class="area-label">Your Text:</label>
+                         <div class="area-actions">
+                            <button type="button" class="action-btn clear-btn" id="copy-input-btn" title="Copy Original Input" aria-label="Copy original input text" disabled>Copy Input</button>
+                            <button type="button" class="action-btn clear-btn" id="clear-input-btn" title="Clear Input" aria-label="Clear input text" disabled>Clear</button>
+                         </div>
+                    </div>
                     <div class="textarea-wrapper">
-                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check"></textarea>
-                        <span class="char-counter" id="char-counter" aria-live="polite">0 / 5000</span>
+                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check" rows="10"></textarea>
+                        <div class="textarea-footer">
+                            <span class="stats" id="input-stats" aria-live="polite">Words: 0 | Chars: 0 / 5000</span>
+                            <span class="readability" id="input-readability" aria-live="polite">Readability: --</span>
+                        </div>
                     </div>
                 </div>
 
@@ -41,30 +50,67 @@
                    <div class="output-content-wrapper">
                        <!-- Corrected Text View -->
                        <div id="output-corrected-content" class="output-content active" role="tabpanel" aria-labelledby="tab-corrected">
-                           <textarea id="output-corrected" placeholder="Corrections will appear here..." readonly aria-label="Corrected text"></textarea>
-                           <div class="action-bar">
-                               <button type="button" class="action-btn" id="copy-btn" title="Copy Corrected Text" aria-label="Copy corrected text" disabled>Copy</button>
+                           <textarea id="output-corrected" placeholder="Corrections will appear here..." readonly aria-label="Corrected text" rows="10"></textarea>
+                           <div class="textarea-footer">
+                                <span class="readability" id="output-readability" aria-live="polite">Readability: --</span>
+                                <button type="button" class="action-btn" id="copy-btn" title="Copy Corrected Text" aria-label="Copy corrected text" disabled>Copy</button>
                            </div>
                        </div>
                        <!-- Diff View -->
                        <div id="output-diff-content" class="output-content diff-view" role="tabpanel" aria-labelledby="tab-diff" aria-live="polite">
                            <div id="output-diff" aria-label="Differences between original and corrected text">Changes will be highlighted here...</div>
-                           <!-- Copy button could also be added here for the diff view if needed -->
                        </div>
                    </div>
+                   <!-- Explanation Area -->
+                   <div id="explanation-area" class="explanation-area" hidden>
+                       <h3 class="explanation-title">Explanation of Changes:</h3>
+                       <ul id="explanation-list" class="explanation-list">
+                           <!-- Explanations will be populated here -->
+                           <li>No explanations available.</li>
+                       </ul>
+                       <p class="explanation-note">Note: Explanations are AI-generated and may not capture every nuance.</p>
+                   </div>
                 </div>
+            </div>
+
+             <!-- Correction Options -->
+            <div class="correction-options">
+                <div class="option-item">
+                    <label for="formality-select">Target Formality:</label>
+                    <select id="formality-select" name="formality">
+                        <option value="general" selected>General / Neutral</option>
+                        <option value="formal">Formal</option>
+                        <option value="informal">Informal / Casual</option>
+                        <option value="academic">Academic</option>
+                        <option value="business">Business Communication</option>
+                        <option value="technical">Technical</option>
+                    </select>
+                </div>
+                <div class="option-item toggle-item"> <!-- Changed class -->
+                    <label for="conciseness-check" class="toggle-switch">
+                         <input type="checkbox" id="conciseness-check" name="make_concise">
+                         <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label-text">Make text more concise</span> <!-- Separate text label -->
+                 </div>
+                 <div class="option-item toggle-item"> <!-- Changed class -->
+                    <label for="explain-corrections-check" class="toggle-switch">
+                         <input type="checkbox" id="explain-corrections-check" name="explain_corrections">
+                         <span class="toggle-slider"></span>
+                    </label>
+                     <span class="toggle-label-text">Explain corrections</span> <!-- Separate text label -->
+                 </div>
             </div>
 
             <div id="error" class="error" role="alert"></div>
 
             <!-- Settings -->
             <div class="settings">
-                <details>
-                    <summary>Advanced Settings</summary>
+                 <details>
+                    <summary>Advanced Settings (API Key & Model)</summary>
                      <div class="settings-content">
                         <div class="settings-item">
                              <label for="model">AI Model:</label>
-                             <!-- Add models suitable for text generation/editing -->
                              <select id="model" name="model">
                                 <option value="gemini-2.5-pro-exp-03-25" selected>Gemini 2.5 Pro (Experimental)</option>
                                 <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
@@ -83,17 +129,9 @@
                             <div class="api-key-container">
                                  <label for="api-key">Google AI API Key:</label>
                                  <input type="password" id="api-key" name="api_key" placeholder="Enter your API Key" required aria-required="true">
-                                 <button type="button" class="toggle-password" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
-                                    <!-- Eye Icon (Show) - Initially Hidden if input type is password -->
-                                    <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16" style="display: none;">
-                                        <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                                        <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-                                    </svg>
-                                    <!-- Eye Slash Icon (Hide) - Initially Shown if input type is password -->
-                                     <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash-fill" viewBox="0 0 16 16" style="display: block;">
-                                        <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588zM5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/>
-                                        <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12-.708.708z"/>
-                                    </svg>
+                                <button type="button" class="toggle-password" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
+                                     <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16" style="display: none;"> <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/> <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/> </svg>
+                                     <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash-fill" viewBox="0 0 16 16" style="display: block;"> <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588zM5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/> <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12-.708.708z"/> </svg>
                                 </button>
                             </div>
                              <div class="save-setting-container">
@@ -110,7 +148,7 @@
              <div class="submit-container">
                 <button type="submit" class="submit-btn" id="check-btn" disabled>
                      <div class="spinner" aria-hidden="true"></div>
-                     <span>Check Text</span>
+                     <span>Check Text</span><span class="shortcut-hint">(Ctrl+Enter)</span>
                  </button>
              </div>
         </form>
@@ -118,12 +156,10 @@
     </div> <!-- End Container -->
 
     <footer class="footer">
-        <p>Powered by YeBeKhe | © <span id="current-year"></span> Enhanced Grammar Checker</p>
-        <!-- Add donation button/modal link if desired -->
-        <!-- <p> <button type="button" id="open-donate-modal">Support Project</button> </p> -->
+        <p>Powered by <a href="https://x.com/yebekhe" target="_blank">Yebekhe</a> with ❤️<br>© <span id="current-year"></span> Enhanced Grammar Checker</p>
     </footer>
 
-    <!-- Include the main script -->
+    <!-- Include the main script DEFERRED -->
     <script src="script.js" defer></script>
 </body>
 </html>
