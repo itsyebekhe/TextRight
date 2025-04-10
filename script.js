@@ -216,7 +216,7 @@
              promptInstructions.push("If no significant changes were made, state that clearly in the explanation section.");
              promptInstructions.push("Do NOT include any other conversational text, apologies, or summaries outside these delimited sections. All responses should be in the same language as the original text.");
         } else {
-             promptInstructions.push('Only return the resulting corrected text, without any extra conversational text, delimiters, explanations, or remarks.');
+             promptInstructions.push('Only return the resulting corrected text, without any extra conversational text, delimiters, explanations, or remarks. All responses should be in the same language as the original text.');
         }
 
         const fullPrompt = `${promptInstructions.join('\n')}\n\n--- START TEXT ---\n${textToCheck}\n--- END TEXT ---`;
