@@ -39,27 +39,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- General Functions ---
     const updateButtonState = () => {
-        const hasText = inputText.value.trim().length > 0;
-        const hasApiKey = apiKey.trim().length > 0;
-        let btnText = "Check Text";
-        let disabled = false;
+        if (spinner.classList.contains('hidden')) { // Only update if not loading
+            const hasText = inputText.value.trim().length > 0;
+            const hasApiKey = apiKey.trim().length > 0;
+            let btnText = "Check Text";
+            let disabled = false;
 
-        if (!hasApiKey) {
-            btnText = "API Key Required";
-            disabled = true;
-        } else if (!hasText) {
-            btnText = "Enter Text to Check";
-            disabled = true;
+            if (!hasApiKey) {
+                btnText = "API Key Required";
+                disabled = true;
+            } else if (!hasText) {
+                btnText = "Enter Text to Check";
+                disabled = true;
+            }
+            checkBtnText.textContent = btnText;
+            checkBtn.disabled = disabled;
         }
-        checkBtnText.textContent = btnText;
-        checkBtn.disabled = disabled;
     };
 
     const showMessage = (message, type = 'danger') => {
         const colors = type === 'danger' 
             ? 'bg-danger-50 text-danger-700 dark:bg-danger-900 dark:text-danger-100' 
             : 'bg-success-50 text-success-700 dark:bg-success-900 dark:text-success-100';
-        messageArea.innerHTML = `<div class="${colors} p-3 rounded-lg text-sm">${message}</div>`;
+        messageArea.innerHTML = `<div class="${colors} p-3 rounded-lg text-sm transition-all">${message}</div>`;
     };
 
     const clearMessage = () => {
@@ -67,13 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const setLoading = (isLoading) => {
-        if (isLoading) {
-            checkBtn.disabled = true;
-            spinner.classList.remove('hidden');
-            checkBtnText.textContent = 'Checking...';
-        } else {
-            spinner.classList.add('hidden');
-            updateButtonState(); // This will set the correct text and disabled state
+        checkBtn.disabled = isLoading;
+        spinner.classList.toggle('hidden', !isLoading);
+        checkBtnText.textContent = isLoading ? 'Checking...' : 'Check Text';
+        if (!isLoading) {
+            updateButtonState();
         }
     };
 
@@ -81,75 +81,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const sunIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>`;
     const moonIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>`;
 
-    const applyTheme = (theme) => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-            themeToggle.innerHTML = sunIcon;
-        } else {
-            document.documentElement.classList.remove('dark');
-            themeToggle.innerHTML = moonIcon;
-        }
-    };
+    function applyTheme(theme) {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
+    }
 
-    themeToggle.addEventListener('click', () => {
-        const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme);
-        applyTheme(newTheme);
-    });
+    // --- Modal Handling (FIXED) ---
+    function openModal() {
+        settingsModal.classList.remove('hidden');
+    }
 
-    // --- Modal Handling ---
-    const openModal = () => settingsModal.classList.remove('hidden');
-    const closeModal = () => {
-        apiKey = apiKeyInput.value;
-        if (apiKey) {
-            localStorage.setItem('googleApiKey', apiKey);
+    function closeModal() {
+        // Get the value from the input when closing
+        const newApiKey = apiKeyInput.value.trim();
+        if (newApiKey) {
+            localStorage.setItem('googleApiKey', newApiKey);
+            apiKey = newApiKey; // Update the in-memory key
         }
         settingsModal.classList.add('hidden');
-        updateButtonState();
-    };
+        updateButtonState(); // Update button state in case key was added
+    }
     
-    settingsBtn.addEventListener('click', openModal);
-    closeModalBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', closeModal);
-
-    // --- Input Handling ---
-    inputText.addEventListener('input', () => {
-        const charCount = inputText.value.length;
-        inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
-        inputStats.classList.toggle('text-red-500', charCount > MAX_CHARS);
-        setButtonState(clearInputBtn, charCount > 0);
-        updateButtonState();
-    });
-
-    clearInputBtn.addEventListener('click', () => {
-        inputText.value = '';
-        resultsCard.classList.add('hidden');
-        clearMessage();
-        inputText.dispatchEvent(new Event('input')); // Trigger input event to update stats/buttons
-    });
-
     // --- Tab Handling ---
-    const switchTab = (activeTab) => {
+    function switchTab(activeTab) {
         const isCorrected = activeTab === 'corrected';
+        // Toggle classes for corrected tab
         tabCorrected.classList.toggle('border-primary-500', isCorrected);
         tabCorrected.classList.toggle('text-primary-600', isCorrected);
         tabCorrected.classList.toggle('border-transparent', !isCorrected);
         tabCorrected.classList.toggle('text-gray-500', !isCorrected);
-
+        
+        // Toggle classes for diff tab
         tabDiff.classList.toggle('border-primary-500', !isCorrected);
         tabDiff.classList.toggle('text-primary-600', !isCorrected);
         tabDiff.classList.toggle('border-transparent', isCorrected);
         tabDiff.classList.toggle('text-gray-500', isCorrected);
-
+        
         panelCorrected.classList.toggle('hidden', !isCorrected);
         panelDiff.classList.toggle('hidden', isCorrected);
-    };
-
-    tabCorrected.addEventListener('click', () => switchTab('corrected'));
-    tabDiff.addEventListener('click', () => switchTab('diff'));
+    }
 
     // --- Main API Call Logic ---
-    checkBtn.addEventListener('click', async () => {
+    async function handleApiCheck() {
         if (inputText.value.length > MAX_CHARS) {
             showMessage(`Text exceeds the maximum length of ${MAX_CHARS} characters.`);
             return;
@@ -183,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     generationConfig: {
                         temperature: 0.2,
                         maxOutputTokens: 4096,
-                        // Request JSON response only when needed
                         responseMimeType: explainCorrections ? "application/json" : "text/plain",
                     }
                 }),
@@ -208,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 correctedText = resultText;
             }
 
-            // --- Update UI with Results ---
             outputCorrected.textContent = correctedText;
             outputDiff.innerHTML = ''; // Clear previous
             const diff = Diff.diffWords(text, correctedText);
@@ -236,24 +207,59 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             setLoading(false);
         }
-    });
-
-    // --- Copy to Clipboard ---
-    copyOutputBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
-            const originalTitle = copyOutputBtn.title;
-            copyOutputBtn.title = 'Copied!';
-            setTimeout(() => { copyOutputBtn.title = originalTitle; }, 2000);
-        });
-    });
-
-    // --- Initial Load ---
-    const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(initialTheme);
-    apiKeyInput.value = apiKey;
-    updateButtonState();
-    if (!apiKey) {
-        showMessage('Welcome! Please enter your Google AI API key in the settings to get started.');
-        openModal();
     }
+
+    // --- Initialization ---
+    function init() {
+        // Attach all event listeners
+        settingsBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', closeModal);
+
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        inputText.addEventListener('input', () => {
+            const charCount = inputText.value.length;
+            inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
+            inputStats.classList.toggle('text-red-500', charCount > MAX_CHARS);
+            clearInputBtn.disabled = charCount === 0;
+            updateButtonState();
+        });
+
+        clearInputBtn.addEventListener('click', () => {
+            inputText.value = '';
+            resultsCard.classList.add('hidden');
+            clearMessage();
+            inputText.dispatchEvent(new Event('input'));
+        });
+
+        tabCorrected.addEventListener('click', () => switchTab('corrected'));
+        tabDiff.addEventListener('click', () => switchTab('diff'));
+        checkBtn.addEventListener('click', handleApiCheck);
+
+        copyOutputBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
+                const originalTitle = copyOutputBtn.title;
+                copyOutputBtn.title = 'Copied!';
+                setTimeout(() => { copyOutputBtn.title = originalTitle; }, 2000);
+            });
+        });
+
+        // Set initial state
+        const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(initialTheme);
+        apiKeyInput.value = apiKey; // Set input value from stored key
+        updateButtonState();
+        inputText.dispatchEvent(new Event('input')); // Set initial stats
+
+        if (!apiKey) {
+            showMessage('Welcome! Please enter your Google AI API key in the settings to get started.');
+        }
+    }
+
+    init();
 });
