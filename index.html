@@ -3,163 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Text Right</title>
+    <title>Text Right - Grammar Checker</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2A4B7C">
     <link rel="icon" href="images/icon-192.png" sizes="192x192" type="image/png">
     <link rel="apple-touch-icon" href="images/icon-192.png">
     <meta name="description" content="Check text for grammar, spelling, and punctuation errors with diff highlighting and optional explanations, powered by Google Gemini.">
-    <link rel="stylesheet" href="style.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#e6f2ff',
+                            100: '#b3d9ff',
+                            200: '#80bfff',
+                            300: '#4da6ff',
+                            400: '#1a8cff',
+                            500: '#0073e6',
+                            600: '#005cb3',
+                            700: '#004580',
+                            800: '#002e4d',
+                            900: '#001726',
+                        }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 1.5s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Local jsdiff library -->
     <script src="diff.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Text Right</h1>
-            <button id="theme-toggle" class="header-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">☀️</button>
-        </div>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
+    <div class="container mx-auto px-4 py-6 max-w-6xl flex-grow">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-primary-600 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-primary-800 dark:text-primary-300">Text Right</h1>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">
+                <span class="sr-only">Toggle theme</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-300 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+        </header>
 
-        <form id="check-form">
-            <div class="input-output-container">
+        <form id="check-form" class="space-y-6">
+            <!-- Main Content Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Input Area -->
-                <div class="input-area">
-                    <div class="area-header">
-                         <label for="input-text" class="area-label">Your Text:</label>
-                         <div class="area-actions">
-                            <button type="button" class="action-btn clear-btn" id="copy-input-btn" title="Copy Original Input" aria-label="Copy original input text" disabled>Copy Input</button>
-                            <button type="button" class="action-btn clear-btn" id="clear-input-btn" title="Clear Input" aria-label="Clear input text" disabled>Clear</button>
-                         </div>
-                    </div>
-                    <div class="textarea-wrapper">
-                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check" rows="10"></textarea>
-                        <div class="textarea-footer">
-                            <span class="stats" id="input-stats" aria-live="polite">Words: 0 | Chars: 0 / 5000</span>
-                            <span class="readability" id="input-readability" aria-live="polite">Readability: --</span>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <label for="input-text" class="block text-lg font-medium text-gray-800 dark:text-gray-200">Your Text</label>
+                        <div class="flex space-x-2">
+                            <button type="button" class="action-btn" id="copy-input-btn" title="Copy Original Input" aria-label="Copy original input text" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                            </button>
+                            <button type="button" class="action-btn" id="clear-input-btn" title="Clear Input" aria-label="Clear input text" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
                         </div>
+                    </div>
+                    <div class="flex-grow">
+                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check" rows="10" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-colors"></textarea>
+                    </div>
+                    <div class="flex justify-between items-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+                        <span id="input-stats" aria-live="polite">Words: 0 | Chars: 0 / 5000</span>
+                        <span id="input-readability" aria-live="polite">Readability: --</span>
                     </div>
                 </div>
 
                 <!-- Output Area -->
-                <div class="output-area">
-                   <label id="output-label" class="area-label">Result:</label>
-                   <div class="output-tabs">
-                       <button type="button" id="tab-corrected" class="tab-btn active" aria-controls="output-corrected-content" role="tab" aria-selected="true">Corrected Text</button>
-                       <button type="button" id="tab-diff" class="tab-btn" aria-controls="output-diff-content" role="tab" aria-selected="false">Show Changes</button>
-                   </div>
-                   <div class="output-content-wrapper">
-                       <!-- Corrected Text View -->
-                       <div id="output-corrected-content" class="output-content active" role="tabpanel" aria-labelledby="tab-corrected">
-                           <textarea id="output-corrected" placeholder="Corrections will appear here..." readonly aria-label="Corrected text" rows="10"></textarea>
-                           <div class="textarea-footer">
-                                <span class="readability" id="output-readability" aria-live="polite">Readability: --</span>
-                                <button type="button" class="action-btn" id="copy-btn" title="Copy Corrected Text" aria-label="Copy corrected text" disabled>Copy</button>
-                           </div>
-                       </div>
-                       <!-- Diff View -->
-                       <div id="output-diff-content" class="output-content diff-view" role="tabpanel" aria-labelledby="tab-diff" aria-live="polite">
-                           <div id="output-diff" aria-label="Differences between original and corrected text">Changes will be highlighted here...</div>
-                       </div>
-                   </div>
-                   <!-- Explanation Area -->
-                   <div id="explanation-area" class="explanation-area" hidden>
-                       <h3 class="explanation-title">Explanation of Changes:</h3>
-                       <ul id="explanation-list" class="explanation-list">
-                           <!-- Explanations will be populated here -->
-                           <li>No explanations available.</li>
-                       </ul>
-                       <p class="explanation-note">Note: Explanations are AI-generated and may not capture every nuance.</p>
-                   </div>
-                </div>
-            </div>
-
-             <!-- Correction Options -->
-            <div class="correction-options">
-                <div class="option-item">
-                    <label for="formality-select">Target Formality:</label>
-                    <select id="formality-select" name="formality">
-                        <option value="general" selected>General / Neutral</option>
-                        <option value="formal">Formal</option>
-                        <option value="informal">Informal / Casual</option>
-                        <option value="academic">Academic</option>
-                        <option value="business">Business Communication</option>
-                        <option value="technical">Technical</option>
-                    </select>
-                </div>
-                <div class="option-item toggle-item"> <!-- Changed class -->
-                    <label for="conciseness-check" class="toggle-switch">
-                         <input type="checkbox" id="conciseness-check" name="make_concise">
-                         <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label-text">Make text more concise</span> <!-- Separate text label -->
-                 </div>
-                 <div class="option-item toggle-item"> <!-- Changed class -->
-                    <label for="explain-corrections-check" class="toggle-switch">
-                         <input type="checkbox" id="explain-corrections-check" name="explain_corrections">
-                         <span class="toggle-slider"></span>
-                    </label>
-                     <span class="toggle-label-text">Explain corrections</span> <!-- Separate text label -->
-                 </div>
-            </div>
-
-            <div id="error" class="error" role="alert"></div>
-
-            <!-- Settings -->
-            <div class="settings">
-                 <details>
-                    <summary>Advanced Settings (API Key & Model)</summary>
-                     <div class="settings-content">
-                        <div class="settings-item">
-                             <label for="model">AI Model:</label>
-                             <select id="model" name="model">
-                                <option value="gemini-2.5-pro-exp-03-25" selected>Gemini 2.5 Pro (Experimental)</option>
-                                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                                <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
-                                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                                <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                                <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
-                                <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8b</option>
-                             </select>
-                             <div class="save-setting-container">
-                                 <input type="checkbox" id="save-model-checkbox">
-                                 <label for="save-model-checkbox">Save Model Choice</label>
-                             </div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="api-key-container">
-                                 <label for="api-key">Google AI API Key:</label>
-                                 <input type="password" id="api-key" name="api_key" placeholder="Enter your API Key" required aria-required="true">
-                                <button type="button" class="toggle-password" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
-                                     <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16" style="display: none;"> <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/> <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/> </svg>
-                                     <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash-fill" viewBox="0 0 16 16" style="display: block;"> <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588zM5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/> <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12-.708.708z"/> </svg>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 flex flex-col">
+                    <label id="output-label" class="block text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Result</label>
+                    
+                    <!-- Tabs -->
+                    <div class="flex border-b border-gray-200 dark:border-gray-700 mb-3">
+                        <button type="button" id="tab-corrected" class="tab-btn active px-4 py-2 font-medium text-sm rounded-t-lg transition-colors" aria-controls="output-corrected-content" role="tab" aria-selected="true">Corrected Text</button>
+                        <button type="button" id="tab-diff" class="tab-btn px-4 py-2 font-medium text-sm rounded-t-lg transition-colors" aria-controls="output-diff-content" role="tab" aria-selected="false">Show Changes</button>
+                    </div>
+                    
+                    <div class="flex-grow">
+                        <!-- Corrected Text View -->
+                        <div id="output-corrected-content" class="output-content active h-full flex flex-col" role="tabpanel" aria-labelledby="tab-corrected">
+                            <textarea id="output-corrected" placeholder="Corrections will appear here..." readonly aria-label="Corrected text" rows="10" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 resize-none transition-colors"></textarea>
+                            <div class="flex justify-between items-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+                                <span id="output-readability" aria-live="polite">Readability: --</span>
+                                <button type="button" class="action-btn" id="copy-btn" title="Copy Corrected Text" aria-label="Copy corrected text" disabled>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
                                 </button>
                             </div>
-                             <div class="save-setting-container">
-                                 <input type="checkbox" id="save-api-key-checkbox">
-                                 <label for="save-api-key-checkbox">Save API Key</label>
-                             </div>
-                            <p class="settings-note">Uses browser local storage. Convenient, but less secure for API keys.</p>
+                        </div>
+                        
+                        <!-- Diff View -->
+                        <div id="output-diff-content" class="output-content diff-view h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 overflow-auto" role="tabpanel" aria-labelledby="tab-diff" aria-live="polite">
+                            <div id="output-diff" aria-label="Differences between original and corrected text" class="text-gray-500 dark:text-gray-400">Changes will be highlighted here...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Explanation Area -->
+                    <div id="explanation-area" class="explanation-area mt-4 hidden">
+                        <h3 class="explanation-title text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Explanation of Changes:</h3>
+                        <ul id="explanation-list" class="explanation-list bg-gray-100 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+                            <li class="text-gray-600 dark:text-gray-300">No explanations available.</li>
+                        </ul>
+                        <p class="explanation-note text-sm text-gray-500 dark:text-gray-400 mt-2">Note: Explanations are AI-generated and may not capture every nuance.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correction Options -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
+                <h2 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Correction Options</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="formality-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Formality</label>
+                        <select id="formality-select" name="formality" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            <option value="general" selected>General / Neutral</option>
+                            <option value="formal">Formal</option>
+                            <option value="informal">Informal / Casual</option>
+                            <option value="academic">Academic</option>
+                            <option value="business">Business Communication</option>
+                            <option value="technical">Technical</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <label for="conciseness-check" class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="conciseness-check" name="make_concise" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Make text more concise</span>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <label for="explain-corrections-check" class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="explain-corrections-check" name="explain_corrections" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Explain corrections</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error" class="error hidden bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg" role="alert"></div>
+
+            <!-- Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                <details class="group">
+                    <summary class="flex justify-between items-center p-5 cursor-pointer list-none hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <span class="text-lg font-medium text-gray-800 dark:text-gray-200">Advanced Settings (API Key & Model)</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
+                    
+                    <div class="px-5 pb-5 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI Model</label>
+                                <select id="model" name="model" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                    <option value="gemini-2.5-pro-exp-03-25" selected>Gemini 2.5 Pro (Experimental)</option>
+                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                    <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                                    <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                                    <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+                                    <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8b</option>
+                                </select>
+                                <div class="mt-2 flex items-center">
+                                    <input type="checkbox" id="save-model-checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                    <label for="save-model-checkbox" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Save Model Choice</label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Google AI API Key</label>
+                                <div class="relative">
+                                    <input type="password" id="api-key" name="api_key" placeholder="Enter your API Key" required aria-required="true" class="w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                    <button type="button" class="toggle-password absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
+                                        <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="mt-2 flex items-center">
+                                    <input type="checkbox" id="save-api-key-checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                    <label for="save-api-key-checkbox" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Save API Key</label>
+                                </div>
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Uses browser local storage. Convenient, but less secure for API keys.</p>
+                            </div>
                         </div>
                     </div>
                 </details>
             </div>
 
-             <!-- Submit Button -->
-             <div class="submit-container">
-                <button type="submit" class="submit-btn" id="check-btn" disabled>
-                     <div class="spinner" aria-hidden="true"></div>
-                     <span>Check Text</span><span class="shortcut-hint">(Ctrl+Enter)</span>
-                 </button>
-             </div>
+            <!-- Submit Button -->
+            <div class="flex justify-center">
+                <button type="submit" class="submit-btn flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" id="check-btn" disabled>
+                    <div class="spinner hidden mr-2 h-5 w-5 border-t-2 border-white rounded-full animate-spin-slow" aria-hidden="true"></div>
+                    <span>Check Text</span>
+                    <span class="shortcut-hint ml-2 text-sm opacity-80">(Ctrl+Enter)</span>
+                </button>
+            </div>
         </form>
+    </div>
 
-    </div> <!-- End Container -->
-
-    <footer class="footer">
-        <p>Powered by <a href="https://x.com/yebekhe" target="_blank">Yebekhe</a> with ❤️<br>© <span id="current-year"></span> Enhanced Grammar Checker</p>
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-600 dark:text-gray-400">Powered by <a href="https://x.com/yebekhe" target="_blank" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">Yebekhe</a> with ❤️<br>© <span id="current-year"></span> Enhanced Grammar Checker</p>
+        </div>
     </footer>
 
     <!-- Include the main script DEFERRED -->
     <script src="script.js" defer></script>
+
+    <style>
+        /* Custom styles for elements that need special handling */
+        .action-btn {
+            @apply p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+        }
+        
+        .tab-btn {
+            @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent;
+        }
+        
+        .tab-btn.active {
+            @apply text-primary-600 dark:text-primary-400 border-primary-600 dark:border-primary-400;
+        }
+        
+        .output-content {
+            @apply hidden;
+        }
+        
+        .output-content.active {
+            @apply block;
+        }
+        
+        .diff-view ins {
+            @apply bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 underline;
+        }
+        
+        .diff-view del {
+            @apply bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 line-through;
+        }
+        
+        .error.visible {
+            @apply block;
+        }
+        
+        .submit-btn.loading .spinner {
+            @apply block;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </body>
 </html>
