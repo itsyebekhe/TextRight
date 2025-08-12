@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Text Right - Grammar Checker</title>
+    <title>Text Right - Enhanced Grammar Checker</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2A4B7C">
     <link rel="icon" href="images/icon-192.png" sizes="192x192" type="image/png">
     <link rel="apple-touch-icon" href="images/icon-192.png">
-    <meta name="description" content="Check text for grammar, spelling, and punctuation errors with diff highlighting and optional explanations, powered by Google Gemini.">
+    <meta name="description" content="A more user-friendly grammar checker with diff highlighting and explanations, powered by Google Gemini.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Custom Tailwind Config -->
@@ -29,6 +29,13 @@
                             700: '#004580',
                             800: '#002e4d',
                             900: '#001726',
+                        },
+                        success: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            700: '#15803d',
+                            900: '#14532d',
                         }
                     },
                     animation: {
@@ -39,7 +46,7 @@
         }
     </script>
     <!-- Local jsdiff library -->
-    <script src="diff.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
     <div class="container mx-auto px-4 py-6 max-w-6xl flex-grow">
@@ -65,70 +72,75 @@
         </header>
 
         <form id="check-form" class="space-y-6">
+            <!-- API Key Input First -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 border-2 border-primary-200 dark:border-primary-800">
+                <h2 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">1. Enter Your API Key</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">You need a Google AI API key to use this tool. You can get one for free from the <a href="https://aistudio.google.com/keys" target="_blank" class="text-primary-600 hover:underline dark:text-primary-400">Google AI Studio.</a></p>
+                <div class="relative">
+                    <input type="password" id="api-key" name="api_key" placeholder="Enter your Google AI API Key" required aria-required="true" class="w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                    <button type="button" class="toggle-password absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
+                        <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                    </button>
+                </div>
+                 <div class="mt-2 flex items-center">
+                    <input type="checkbox" id="save-api-key-checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                    <label for="save-api-key-checkbox" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Save API Key in browser</label>
+                </div>
+                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Uses local storage. Convenient, but do not use on shared computers.</p>
+            </div>
+
             <!-- Main Content Area -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Input Area -->
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 flex flex-col">
                     <div class="flex justify-between items-center mb-3">
-                        <label for="input-text" class="block text-lg font-medium text-gray-800 dark:text-gray-200">Your Text</label>
+                        <label for="input-text" class="block text-lg font-medium text-gray-800 dark:text-gray-200">2. Your Text</label>
                         <div class="flex space-x-2">
-                            <button type="button" class="action-btn" id="copy-input-btn" title="Copy Original Input" aria-label="Copy original input text" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                </svg>
+                             <button type="button" class="action-btn" id="copy-input-btn" title="Copy Original Input" aria-label="Copy original input text" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v2a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                             </button>
                             <button type="button" class="action-btn" id="clear-input-btn" title="Clear Input" aria-label="Clear input text" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
                         </div>
                     </div>
                     <div class="flex-grow">
-                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check" rows="10" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-colors"></textarea>
+                        <textarea id="input-text" name="text" maxlength="5000" placeholder="Paste or type your text here (up to 5000 characters)..." aria-label="Text to check" rows="12" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-colors"></textarea>
                     </div>
                     <div class="flex justify-between items-center mt-3 text-sm text-gray-600 dark:text-gray-400">
                         <span id="input-stats" aria-live="polite">Words: 0 | Chars: 0 / 5000</span>
-                        <span id="input-readability" aria-live="polite">Readability: --</span>
                     </div>
                 </div>
 
                 <!-- Output Area -->
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 flex flex-col">
-                    <label id="output-label" class="block text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Result</label>
-                    
-                    <!-- Tabs -->
+                    <label id="output-label" class="block text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">3. Result</label>
                     <div class="flex border-b border-gray-200 dark:border-gray-700 mb-3">
                         <button type="button" id="tab-corrected" class="tab-btn active px-4 py-2 font-medium text-sm rounded-t-lg transition-colors" aria-controls="output-corrected-content" role="tab" aria-selected="true">Corrected Text</button>
                         <button type="button" id="tab-diff" class="tab-btn px-4 py-2 font-medium text-sm rounded-t-lg transition-colors" aria-controls="output-diff-content" role="tab" aria-selected="false">Show Changes</button>
                     </div>
-                    
                     <div class="flex-grow">
-                        <!-- Corrected Text View -->
                         <div id="output-corrected-content" class="output-content active h-full flex flex-col" role="tabpanel" aria-labelledby="tab-corrected">
-                            <textarea id="output-corrected" placeholder="Corrections will appear here..." readonly aria-label="Corrected text" rows="10" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 resize-none transition-colors"></textarea>
-                            <div class="flex justify-between items-center mt-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span id="output-readability" aria-live="polite">Readability: --</span>
+                            <textarea id="output-corrected" placeholder="Corrections will appear here after you check your text." readonly aria-label="Corrected text" rows="12" class="w-full h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 resize-none transition-colors"></textarea>
+                            <div class="flex justify-between items-center mt-3">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">&nbsp;</span>
                                 <button type="button" class="action-btn" id="copy-btn" title="Copy Corrected Text" aria-label="Copy corrected text" disabled>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                    </svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v2a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2m-4 0H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                                 </button>
                             </div>
                         </div>
-                        
-                        <!-- Diff View -->
                         <div id="output-diff-content" class="output-content diff-view h-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 overflow-auto" role="tabpanel" aria-labelledby="tab-diff" aria-live="polite">
-                            <div id="output-diff" aria-label="Differences between original and corrected text" class="text-gray-500 dark:text-gray-400">Changes will be highlighted here...</div>
+                            <div id="output-diff" aria-label="Differences between original and corrected text" class="text-gray-500 dark:text-gray-400">Welcome! Enter text and click "Check Text" to see the changes highlighted here.</div>
                         </div>
                     </div>
-                    
-                    <!-- Explanation Area -->
                     <div id="explanation-area" class="explanation-area mt-4 hidden">
                         <h3 class="explanation-title text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Explanation of Changes:</h3>
-                        <ul id="explanation-list" class="explanation-list bg-gray-100 dark:bg-gray-700 rounded-lg p-4 space-y-2">
-                            <li class="text-gray-600 dark:text-gray-300">No explanations available.</li>
-                        </ul>
+                        <ul id="explanation-list" class="explanation-list bg-gray-100 dark:bg-gray-700 rounded-lg p-4 space-y-2"></ul>
                         <p class="explanation-note text-sm text-gray-500 dark:text-gray-400 mt-2">Note: Explanations are AI-generated and may not capture every nuance.</p>
                     </div>
                 </div>
@@ -137,7 +149,7 @@
             <!-- Correction Options -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
                 <h2 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Correction Options</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                         <label for="formality-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Formality</label>
                         <select id="formality-select" name="formality" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
@@ -149,87 +161,32 @@
                             <option value="technical">Technical</option>
                         </select>
                     </div>
-                    
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center pt-5 md:pt-0">
                         <label for="conciseness-check" class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="conciseness-check" name="make_concise" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Make text more concise</span>
                         </label>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Make text more concise</span>
                     </div>
-                    
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center">
                         <label for="explain-corrections-check" class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="explain-corrections-check" name="explain_corrections" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Explain corrections</span>
                         </label>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Explain corrections</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Error Display -->
-            <div id="error" class="error hidden bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg" role="alert"></div>
-
-            <!-- Settings -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <details class="group">
-                    <summary class="flex justify-between items-center p-5 cursor-pointer list-none hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <span class="text-lg font-medium text-gray-800 dark:text-gray-200">Advanced Settings (API Key & Model)</span>
-                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </summary>
-                    
-                    <div class="px-5 pb-5 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI Model</label>
-                                <select id="model" name="model" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                                    <option value="gemini-2.5-pro-exp-03-25" selected>Gemini 2.5 Pro (Experimental)</option>
-                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                                    <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
-                                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                                    <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                                    <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
-                                    <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8b</option>
-                                </select>
-                                <div class="mt-2 flex items-center">
-                                    <input type="checkbox" id="save-model-checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
-                                    <label for="save-model-checkbox" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Save Model Choice</label>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label for="api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Google AI API Key</label>
-                                <div class="relative">
-                                    <input type="password" id="api-key" name="api_key" placeholder="Enter your API Key" required aria-required="true" class="w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                                    <button type="button" class="toggle-password absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" id="toggle-password-btn" title="Show/Hide API Key" aria-label="Show/Hide API Key">
-                                        <svg id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        <svg id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="mt-2 flex items-center">
-                                    <input type="checkbox" id="save-api-key-checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
-                                    <label for="save-api-key-checkbox" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Save API Key</label>
-                                </div>
-                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Uses browser local storage. Convenient, but less secure for API keys.</p>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-            </div>
+            <!-- Messages (Error and Success) -->
+            <div id="error-message" class="message hidden bg-red-100 dark:bg-red-900/30 border border-red-500 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg" role="alert" aria-live="assertive"></div>
+            <div id="success-message" class="message hidden bg-success-50 dark:bg-success-900/30 border border-success-500 text-success-700 dark:text-success-200 px-4 py-3 rounded-lg" role="status" aria-live="polite"></div>
 
             <!-- Submit Button -->
-            <div class="flex justify-center">
-                <button type="submit" class="submit-btn flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" id="check-btn" disabled>
+            <div class="flex justify-center mt-6">
+                <button type="submit" class="submit-btn flex items-center justify-center w-full max-w-xs px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-gray-600" id="check-btn" disabled>
                     <div class="spinner hidden mr-2 h-5 w-5 border-t-2 border-white rounded-full animate-spin-slow" aria-hidden="true"></div>
-                    <span>Check Text</span>
+                    <span id="check-btn-text">Check Text</span>
                     <span class="shortcut-hint ml-2 text-sm opacity-80">(Ctrl+Enter)</span>
                 </button>
             </div>
@@ -243,53 +200,295 @@
         </div>
     </footer>
 
-    <!-- Include the main script DEFERRED -->
-    <script src="script.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const getEl = (id) => document.getElementById(id);
 
-    <style>
-        /* Custom styles for elements that need special handling */
-        .action-btn {
-            @apply p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-        }
-        
-        .tab-btn {
-            @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent;
-        }
-        
-        .tab-btn.active {
-            @apply text-primary-600 dark:text-primary-400 border-primary-600 dark:border-primary-400;
-        }
-        
-        .output-content {
-            @apply hidden;
-        }
-        
-        .output-content.active {
-            @apply block;
-        }
-        
-        .diff-view ins {
-            @apply bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 underline;
-        }
-        
-        .diff-view del {
-            @apply bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 line-through;
-        }
-        
-        .error.visible {
-            @apply block;
-        }
-        
-        .submit-btn.loading .spinner {
-            @apply block;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .grid {
-                grid-template-columns: 1fr;
+            // Form and fields
+            const checkForm = getEl('check-form');
+            const apiKeyInput = getEl('api-key');
+            const inputTextarea = getEl('input-text');
+            const outputCorrectedTextarea = getEl('output-corrected');
+            const outputDiffDiv = getEl('output-diff');
+            const checkBtn = getEl('check-btn');
+            const checkBtnText = getEl('check-btn-text');
+
+            // Buttons
+            const copyInputBtn = getEl('copy-input-btn');
+            const clearInputBtn = getEl('clear-input-btn');
+            const copyCorrectedBtn = getEl('copy-btn');
+            const themeToggleBtn = getEl('theme-toggle');
+            const togglePasswordBtn = getEl('toggle-password-btn');
+
+            // Tabs
+            const tabCorrected = getEl('tab-corrected');
+            const tabDiff = getEl('tab-diff');
+            const outputCorrectedContent = getEl('output-corrected-content');
+            const outputDiffContent = getEl('output-diff-content');
+
+            // Displays
+            const inputStatsSpan = getEl('input-stats');
+            const explanationArea = getEl('explanation-area');
+            const explanationList = getEl('explanation-list');
+            const errorMessageDiv = getEl('error-message');
+            const successMessageDiv = getEl('success-message');
+
+            // Checkboxes
+            const saveApiKeyCheckbox = getEl('save-api-key-checkbox');
+            const explainCorrectionsCheckbox = getEl('explain-corrections-check');
+
+            const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+
+            // --- Utility Functions ---
+            const showMessage = (element, message, isError = true) => {
+                element.textContent = message;
+                element.classList.remove('hidden');
+                // Hide other message types
+                (isError ? successMessageDiv : errorMessageDiv).classList.add('hidden');
+            };
+
+            const hideMessages = () => {
+                errorMessageDiv.classList.add('hidden');
+                successMessageDiv.classList.add('hidden');
+            };
+
+            const setButtonState = (button, enabled) => {
+                button.disabled = !enabled;
+            };
+
+            const setLoading = (isLoading) => {
+                checkBtn.classList.toggle('loading', isLoading);
+                getEl('spinner').classList.toggle('hidden', !isLoading);
+                checkBtnText.textContent = isLoading ? 'Checking...' : 'Check Text';
+                setButtonState(checkBtn, !isLoading);
+            };
+
+            // --- Theme Management ---
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    getEl('eye-icon-open').classList.remove('dark:hidden');
+                    getEl('eye-icon-closed').classList.add('dark:block');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    getEl('eye-icon-open').classList.add('dark:hidden');
+                    getEl('eye-icon-closed').classList.remove('dark:block');
+                }
+            };
+            
+            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+
+            themeToggleBtn.addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+
+
+            // --- Local Storage for API Key ---
+            if (localStorage.getItem('saveApiKey') === 'true') {
+                apiKeyInput.value = localStorage.getItem('apiKey') || '';
+                saveApiKeyCheckbox.checked = true;
             }
-        }
+
+            saveApiKeyCheckbox.addEventListener('change', () => {
+                localStorage.setItem('saveApiKey', saveApiKeyCheckbox.checked);
+                if (saveApiKeyCheckbox.checked) {
+                    localStorage.setItem('apiKey', apiKeyInput.value);
+                } else {
+                    localStorage.removeItem('apiKey');
+                }
+            });
+
+            apiKeyInput.addEventListener('input', () => {
+                if (saveApiKeyCheckbox.checked) {
+                    localStorage.setItem('apiKey', apiKeyInput.value);
+                }
+                validateForm();
+            });
+
+            // --- Input Text Area Logic ---
+            const updateInputStats = () => {
+                const text = inputTextarea.value;
+                const charCount = text.length;
+                const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+                inputStatsSpan.textContent = `Words: ${wordCount} | Chars: ${charCount} / 5000`;
+                setButtonState(clearInputBtn, charCount > 0);
+                setButtonState(copyInputBtn, charCount > 0); // BUG FIX: Enable copy button correctly
+                validateForm();
+            };
+
+            inputTextarea.addEventListener('input', updateInputStats);
+
+            // --- Button Logic ---
+            const validateForm = () => {
+                const hasText = inputTextarea.value.trim().length > 0;
+                const hasApiKey = apiKeyInput.value.trim().length > 0;
+
+                if (!hasApiKey) {
+                    setButtonState(checkBtn, false);
+                    checkBtnText.textContent = 'Enter API Key';
+                } else if (!hasText) {
+                    setButtonState(checkBtn, false);
+                    checkBtnText.textContent = 'Enter Text Above';
+                } else {
+                    setButtonState(checkBtn, true);
+                    checkBtnText.textContent = 'Check Text';
+                }
+            };
+
+            clearInputBtn.addEventListener('click', () => {
+                inputTextarea.value = '';
+                outputCorrectedTextarea.value = '';
+                outputDiffDiv.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Changes will be highlighted here...</div>';
+                explanationArea.classList.add('hidden');
+                hideMessages();
+                setButtonState(copyCorrectedBtn, false);
+                updateInputStats();
+            });
+
+            copyInputBtn.addEventListener('click', () => navigator.clipboard.writeText(inputTextarea.value).then(() => {
+                // Optional: add feedback
+            }));
+
+            copyCorrectedBtn.addEventListener('click', () => navigator.clipboard.writeText(outputCorrectedTextarea.value).then(() => {
+                // Optional: add feedback
+            }));
+            
+            togglePasswordBtn.addEventListener('click', () => {
+                const isOpen = apiKeyInput.type === 'text';
+                apiKeyInput.type = isOpen ? 'password' : 'text';
+                getEl('eye-icon-open').classList.toggle('hidden', isOpen);
+                getEl('eye-icon-closed').classList.toggle('hidden', !isOpen);
+            });
+
+            // --- Tab Switching Logic ---
+            [tabCorrected, tabDiff].forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelector('.tab-btn.active').classList.remove('active');
+                    e.currentTarget.classList.add('active');
+                    
+                    document.querySelector('.output-content.active').classList.remove('active');
+                    const targetContentId = e.currentTarget.getAttribute('aria-controls');
+                    getEl(targetContentId).classList.add('active');
+                });
+            });
+
+            // --- Main Form Submission ---
+            checkForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideMessages();
+                setLoading(true);
+
+                const formData = new FormData(checkForm);
+                const text = formData.get('text');
+                const apiKey = formData.get('api_key');
+                const formality = formData.get('formality');
+                const makeConcise = formData.has('make_concise');
+                const explainCorrections = formData.has('explain_corrections');
+
+                let prompt = `You are an expert editor. Please correct the following text for grammar, spelling, and punctuation. Maintain the original meaning and tone.`;
+
+                if (formality !== 'general') {
+                    prompt += ` The target formality is ${formality}.`;
+                }
+                if (makeConcise) {
+                    prompt += ` Make the text more concise where possible without losing meaning.`;
+                }
+
+                if (explainCorrections) {
+                     prompt += ` Return the result as a JSON object with two keys: "correctedText" (containing the corrected text) and "explanations" (containing a bulleted list of key changes and the reasoning behind them).`;
+                } else {
+                    prompt += ` Just return the corrected text itself, with no extra formatting or explanation.`;
+                }
+                
+                prompt += `\n\nOriginal Text:\n---\n${text}`;
+
+                try {
+                    const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.3,
+                                maxOutputTokens: 2048,
+                            },
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const resultText = data.candidates[0].content.parts[0].text;
+                    
+                    let correctedText, explanations = [];
+
+                    if (explainCorrections) {
+                        try {
+                            const jsonResult = JSON.parse(resultText.replace(/```json|```/g, '').trim());
+                            correctedText = jsonResult.correctedText;
+                            explanations = jsonResult.explanations;
+                        } catch (parseError) {
+                            // Fallback if AI doesn't return valid JSON
+                            correctedText = resultText;
+                            explanations.push("The AI did not provide a valid explanation format.");
+                        }
+                    } else {
+                        correctedText = resultText;
+                    }
+
+                    outputCorrectedTextarea.value = correctedText;
+                    setButtonState(copyCorrectedBtn, correctedText.length > 0);
+                    showMessage(successMessageDiv, 'Text successfully checked!', false);
+                    
+                    // Generate and display diff
+                    const diff = Diff.diffWordsWithSpace(text, correctedText);
+                    const fragment = document.createDocumentFragment();
+                    diff.forEach(part => {
+                        const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
+                        node.appendChild(document.createTextNode(part.value));
+                        fragment.appendChild(node);
+                    });
+                    outputDiffDiv.innerHTML = '';
+                    outputDiffDiv.appendChild(fragment);
+
+                    // Display explanations
+                    if (explainCorrections && explanations.length > 0) {
+                        explanationList.innerHTML = explanations.map(item => `<li class="text-gray-700 dark:text-gray-300">${item}</li>`).join('');
+                        explanationArea.classList.remove('hidden');
+                    } else {
+                        explanationArea.classList.add('hidden');
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    showMessage(errorMessageDiv, `An error occurred: ${error.message}`);
+                } finally {
+                    setLoading(false);
+                    validateForm();
+                }
+            });
+
+            // --- Initial State Setup ---
+            getEl('current-year').textContent = new Date().getFullYear();
+            updateInputStats();
+        });
+    </script>
+    <style>
+        .action-btn { @apply p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+        .tab-btn { @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent; }
+        .tab-btn.active { @apply text-primary-600 dark:text-primary-400 border-primary-600 dark:border-primary-400; }
+        .output-content { @apply hidden; }
+        .output-content.active { @apply block; }
+        .diff-view ins { @apply bg-green-100 dark:bg-green-900/40 text-decoration-none font-semibold px-1 rounded; }
+        .diff-view del { @apply bg-red-100 dark:bg-red-900/40 text-decoration-line-through px-1 rounded; }
+        .submit-btn.loading .spinner { @apply block; }
+        .submit-btn.loading span { @apply opacity-80; }
     </style>
 </body>
 </html>
