@@ -26,12 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = getEl('settings-modal');
     const closeModalBtn = getEl('close-modal-btn');
     const apiKeyInput = getEl('api-key-input');
+    const modelSelect = getEl('model-select');
     const modalOverlay = settingsModal.querySelector('.modal-overlay');
 
     // --- Constants and State ---
-    const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+    const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
     const MAX_CHARS = 5000;
+    const DEFAULT_MODEL = 'gemini-1.5-flash-latest';
     let apiKey = localStorage.getItem('googleApiKey') || '';
+    let selectedModel = localStorage.getItem('googleApiModel') || DEFAULT_MODEL;
 
     // --- Core Functions ---
     const updateButtonState = () => {
@@ -76,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
     };
 
-    // --- Main API Call Logic (FIXED PROMPT) ---
     const handleApiCheck = async () => {
         if (inputText.value.length > MAX_CHARS) {
             showMessage(`Text exceeds the maximum length of ${MAX_CHARS} characters.`);
@@ -91,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const makeConcise = concisenessCheck.checked;
         const explainCorrections = explainCorrectionsCheck.checked;
 
-        // --- NEW, STRICTER PROMPT TO PREVENT TRANSLATION ---
         let prompt = `You are a strict proofreading assistant. Your only task is to correct grammar, spelling, and punctuation errors.
 
 **CRITICAL RULES:**
@@ -119,10 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
             prompt += `\nReturn ONLY the corrected text as a raw string, with no additional commentary or formatting.`;
         }
         prompt += `\n\n--- ORIGINAL TEXT TO CORRECT ---\n${text}`;
-        // --- END OF NEW PROMPT ---
+        
+        const fullApiUrl = `${API_BASE_URL}${selectedModel}:generateContent?key=${apiKey}`;
 
         try {
-            const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+            const response = await fetch(fullApiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -174,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('Check complete!', 'success');
         } catch (error) {
             console.error('Error:', error);
-            let userMessage = `An error occurred: ${error.message}. Please check your API key and try again.`;
+            let userMessage = `An error occurred: ${error.message}. Please check your API key or model selection and try again.`;
             if (error instanceof SyntaxError) {
                 userMessage = "The AI returned an invalid response. Please try again.";
             }
@@ -188,11 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         const openModal = () => settingsModal.classList.remove('hidden');
         const closeModal = () => {
-            const newApiKey = apiKeyInput.value.trim();
-            if (newApiKey) {
-                localStorage.setItem('googleApiKey', newApiKey);
-                apiKey = newApiKey;
-            }
+            apiKey = apiKeyInput.value.trim();
+            selectedModel = modelSelect.value;
+            if (apiKey) localStorage.setItem('googleApiKey', apiKey);
+            localStorage.setItem('googleApiModel', selectedModel);
             settingsModal.classList.add('hidden');
             updateButtonState();
         };
@@ -251,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(initialTheme);
         apiKeyInput.value = apiKey;
+        modelSelect.value = selectedModel;
         updateButtonState();
         inputText.dispatchEvent(new Event('input'));
 
