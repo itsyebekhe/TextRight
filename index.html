@@ -146,10 +146,12 @@
                 </div>
             </div>
 
-            <!-- Correction Options -->
+            <!-- Correction Options (FIXED) -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
                 <h2 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">Correction Options</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 md:items-end">
+                    
+                    <!-- Item 1: Formality Dropdown -->
                     <div>
                         <label for="formality-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Formality</label>
                         <select id="formality-select" name="formality" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
@@ -161,20 +163,25 @@
                             <option value="technical">Technical</option>
                         </select>
                     </div>
-                    <div class="flex items-center pt-5 md:pt-0">
+                    
+                    <!-- Item 2: Conciseness Toggle -->
+                    <div class="pb-1">
                         <label for="conciseness-check" class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="conciseness-check" name="make_concise" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                             <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Make text more concise</span>
                         </label>
                     </div>
-                    <div class="flex items-center">
+                    
+                    <!-- Item 3: Explain Corrections Toggle -->
+                    <div class="pb-1">
                         <label for="explain-corrections-check" class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="explain-corrections-check" name="explain_corrections" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                             <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Explain corrections</span>
                         </label>
                     </div>
+
                 </div>
             </div>
 
@@ -200,285 +207,9 @@
         </div>
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const getEl = (id) => document.getElementById(id);
-
-            // Form and fields
-            const checkForm = getEl('check-form');
-            const apiKeyInput = getEl('api-key');
-            const inputTextarea = getEl('input-text');
-            const outputCorrectedTextarea = getEl('output-corrected');
-            const outputDiffDiv = getEl('output-diff');
-            const checkBtn = getEl('check-btn');
-            const checkBtnText = getEl('check-btn-text');
-
-            // Buttons
-            const copyInputBtn = getEl('copy-input-btn');
-            const clearInputBtn = getEl('clear-input-btn');
-            const copyCorrectedBtn = getEl('copy-btn');
-            const themeToggleBtn = getEl('theme-toggle');
-            const togglePasswordBtn = getEl('toggle-password-btn');
-
-            // Tabs
-            const tabCorrected = getEl('tab-corrected');
-            const tabDiff = getEl('tab-diff');
-            const outputCorrectedContent = getEl('output-corrected-content');
-            const outputDiffContent = getEl('output-diff-content');
-
-            // Displays
-            const inputStatsSpan = getEl('input-stats');
-            const explanationArea = getEl('explanation-area');
-            const explanationList = getEl('explanation-list');
-            const errorMessageDiv = getEl('error-message');
-            const successMessageDiv = getEl('success-message');
-
-            // Checkboxes
-            const saveApiKeyCheckbox = getEl('save-api-key-checkbox');
-            const explainCorrectionsCheckbox = getEl('explain-corrections-check');
-
-            const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
-
-            // --- Utility Functions ---
-            const showMessage = (element, message, isError = true) => {
-                element.textContent = message;
-                element.classList.remove('hidden');
-                // Hide other message types
-                (isError ? successMessageDiv : errorMessageDiv).classList.add('hidden');
-            };
-
-            const hideMessages = () => {
-                errorMessageDiv.classList.add('hidden');
-                successMessageDiv.classList.add('hidden');
-            };
-
-            const setButtonState = (button, enabled) => {
-                button.disabled = !enabled;
-            };
-
-            const setLoading = (isLoading) => {
-                checkBtn.classList.toggle('loading', isLoading);
-                getEl('spinner').classList.toggle('hidden', !isLoading);
-                checkBtnText.textContent = isLoading ? 'Checking...' : 'Check Text';
-                setButtonState(checkBtn, !isLoading);
-            };
-
-            // --- Theme Management ---
-            const applyTheme = (theme) => {
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    getEl('eye-icon-open').classList.remove('dark:hidden');
-                    getEl('eye-icon-closed').classList.add('dark:block');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    getEl('eye-icon-open').classList.add('dark:hidden');
-                    getEl('eye-icon-closed').classList.remove('dark:block');
-                }
-            };
-            
-            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            applyTheme(savedTheme);
-
-            themeToggleBtn.addEventListener('click', () => {
-                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                applyTheme(newTheme);
-            });
-
-
-            // --- Local Storage for API Key ---
-            if (localStorage.getItem('saveApiKey') === 'true') {
-                apiKeyInput.value = localStorage.getItem('apiKey') || '';
-                saveApiKeyCheckbox.checked = true;
-            }
-
-            saveApiKeyCheckbox.addEventListener('change', () => {
-                localStorage.setItem('saveApiKey', saveApiKeyCheckbox.checked);
-                if (saveApiKeyCheckbox.checked) {
-                    localStorage.setItem('apiKey', apiKeyInput.value);
-                } else {
-                    localStorage.removeItem('apiKey');
-                }
-            });
-
-            apiKeyInput.addEventListener('input', () => {
-                if (saveApiKeyCheckbox.checked) {
-                    localStorage.setItem('apiKey', apiKeyInput.value);
-                }
-                validateForm();
-            });
-
-            // --- Input Text Area Logic ---
-            const updateInputStats = () => {
-                const text = inputTextarea.value;
-                const charCount = text.length;
-                const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-                inputStatsSpan.textContent = `Words: ${wordCount} | Chars: ${charCount} / 5000`;
-                setButtonState(clearInputBtn, charCount > 0);
-                setButtonState(copyInputBtn, charCount > 0); // BUG FIX: Enable copy button correctly
-                validateForm();
-            };
-
-            inputTextarea.addEventListener('input', updateInputStats);
-
-            // --- Button Logic ---
-            const validateForm = () => {
-                const hasText = inputTextarea.value.trim().length > 0;
-                const hasApiKey = apiKeyInput.value.trim().length > 0;
-
-                if (!hasApiKey) {
-                    setButtonState(checkBtn, false);
-                    checkBtnText.textContent = 'Enter API Key';
-                } else if (!hasText) {
-                    setButtonState(checkBtn, false);
-                    checkBtnText.textContent = 'Enter Text Above';
-                } else {
-                    setButtonState(checkBtn, true);
-                    checkBtnText.textContent = 'Check Text';
-                }
-            };
-
-            clearInputBtn.addEventListener('click', () => {
-                inputTextarea.value = '';
-                outputCorrectedTextarea.value = '';
-                outputDiffDiv.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Changes will be highlighted here...</div>';
-                explanationArea.classList.add('hidden');
-                hideMessages();
-                setButtonState(copyCorrectedBtn, false);
-                updateInputStats();
-            });
-
-            copyInputBtn.addEventListener('click', () => navigator.clipboard.writeText(inputTextarea.value).then(() => {
-                // Optional: add feedback
-            }));
-
-            copyCorrectedBtn.addEventListener('click', () => navigator.clipboard.writeText(outputCorrectedTextarea.value).then(() => {
-                // Optional: add feedback
-            }));
-            
-            togglePasswordBtn.addEventListener('click', () => {
-                const isOpen = apiKeyInput.type === 'text';
-                apiKeyInput.type = isOpen ? 'password' : 'text';
-                getEl('eye-icon-open').classList.toggle('hidden', isOpen);
-                getEl('eye-icon-closed').classList.toggle('hidden', !isOpen);
-            });
-
-            // --- Tab Switching Logic ---
-            [tabCorrected, tabDiff].forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    document.querySelector('.tab-btn.active').classList.remove('active');
-                    e.currentTarget.classList.add('active');
-                    
-                    document.querySelector('.output-content.active').classList.remove('active');
-                    const targetContentId = e.currentTarget.getAttribute('aria-controls');
-                    getEl(targetContentId).classList.add('active');
-                });
-            });
-
-            // --- Main Form Submission ---
-            checkForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                hideMessages();
-                setLoading(true);
-
-                const formData = new FormData(checkForm);
-                const text = formData.get('text');
-                const apiKey = formData.get('api_key');
-                const formality = formData.get('formality');
-                const makeConcise = formData.has('make_concise');
-                const explainCorrections = formData.has('explain_corrections');
-
-                let prompt = `You are an expert editor. Please correct the following text for grammar, spelling, and punctuation. Maintain the original meaning and tone.`;
-
-                if (formality !== 'general') {
-                    prompt += ` The target formality is ${formality}.`;
-                }
-                if (makeConcise) {
-                    prompt += ` Make the text more concise where possible without losing meaning.`;
-                }
-
-                if (explainCorrections) {
-                     prompt += ` Return the result as a JSON object with two keys: "correctedText" (containing the corrected text) and "explanations" (containing a bulleted list of key changes and the reasoning behind them).`;
-                } else {
-                    prompt += ` Just return the corrected text itself, with no extra formatting or explanation.`;
-                }
-                
-                prompt += `\n\nOriginal Text:\n---\n${text}`;
-
-                try {
-                    const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: {
-                                temperature: 0.3,
-                                maxOutputTokens: 2048,
-                            },
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const resultText = data.candidates[0].content.parts[0].text;
-                    
-                    let correctedText, explanations = [];
-
-                    if (explainCorrections) {
-                        try {
-                            const jsonResult = JSON.parse(resultText.replace(/```json|```/g, '').trim());
-                            correctedText = jsonResult.correctedText;
-                            explanations = jsonResult.explanations;
-                        } catch (parseError) {
-                            // Fallback if AI doesn't return valid JSON
-                            correctedText = resultText;
-                            explanations.push("The AI did not provide a valid explanation format.");
-                        }
-                    } else {
-                        correctedText = resultText;
-                    }
-
-                    outputCorrectedTextarea.value = correctedText;
-                    setButtonState(copyCorrectedBtn, correctedText.length > 0);
-                    showMessage(successMessageDiv, 'Text successfully checked!', false);
-                    
-                    // Generate and display diff
-                    const diff = Diff.diffWordsWithSpace(text, correctedText);
-                    const fragment = document.createDocumentFragment();
-                    diff.forEach(part => {
-                        const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
-                        node.appendChild(document.createTextNode(part.value));
-                        fragment.appendChild(node);
-                    });
-                    outputDiffDiv.innerHTML = '';
-                    outputDiffDiv.appendChild(fragment);
-
-                    // Display explanations
-                    if (explainCorrections && explanations.length > 0) {
-                        explanationList.innerHTML = explanations.map(item => `<li class="text-gray-700 dark:text-gray-300">${item}</li>`).join('');
-                        explanationArea.classList.remove('hidden');
-                    } else {
-                        explanationArea.classList.add('hidden');
-                    }
-
-                } catch (error) {
-                    console.error('Error:', error);
-                    showMessage(errorMessageDiv, `An error occurred: ${error.message}`);
-                } finally {
-                    setLoading(false);
-                    validateForm();
-                }
-            });
-
-            // --- Initial State Setup ---
-            getEl('current-year').textContent = new Date().getFullYear();
-            updateInputStats();
-        });
-    </script>
+    <!-- The script provided in the previous step goes here -->
+    <script src="script.js" defer></script>
+    
     <style>
         .action-btn { @apply p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
         .tab-btn { @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent; }
