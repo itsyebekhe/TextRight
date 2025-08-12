@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TextRight - Simple Grammar Checker</title>
-    <meta name="description" content="A simple, clean, and powerful grammar checker powered by Google Gemini.">
+    <title>TextRight - A Working Grammar Checker</title>
+    <meta name="description" content="A simple, clean, and fully functional grammar checker powered by Google Gemini.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Custom Tailwind Config -->
@@ -52,7 +52,7 @@
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
                 <button id="theme-toggle" title="Toggle Theme" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <!-- Icons will be managed by JS -->
+                    <!-- Icons are managed by JS -->
                 </button>
             </div>
         </header>
@@ -74,7 +74,6 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
                 <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Options</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <!-- Formality -->
                     <div>
                         <label for="formality-select" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Formality</label>
                         <select id="formality-select" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500">
@@ -84,7 +83,6 @@
                             <option value="academic">Academic</option>
                         </select>
                     </div>
-                    <!-- Toggle: Concise -->
                     <div class="flex items-end pb-1">
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="conciseness-check" class="sr-only peer">
@@ -92,7 +90,6 @@
                             <span class="ml-3 text-sm font-medium">Make Concise</span>
                         </label>
                     </div>
-                    <!-- Toggle: Explain -->
                     <div class="flex items-end pb-1">
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="explain-corrections-check" class="sr-only peer" checked>
@@ -122,28 +119,20 @@
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                     </button>
                 </div>
-
-                <!-- Tabs for Corrected vs. Diff -->
                 <div class="border-b border-gray-200 dark:border-gray-700">
                     <nav class="-mb-px flex space-x-6" aria-label="Tabs">
                         <button id="tab-corrected" class="tab-btn shrink-0 px-1 py-3 border-b-2 font-medium text-sm border-primary-500 text-primary-600">Corrected</button>
                         <button id="tab-diff" class="tab-btn shrink-0 px-1 py-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500">Changes</button>
                     </nav>
                 </div>
-
-                <!-- Tab Panels -->
                 <div class="mt-4">
-                    <!-- Corrected Text Panel -->
                     <div id="panel-corrected">
                         <div id="output-corrected" class="w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[12rem] whitespace-pre-wrap"></div>
                     </div>
-                    <!-- Diff View Panel -->
                     <div id="panel-diff" class="hidden">
                         <div id="output-diff" class="diff-view w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[12rem] whitespace-pre-wrap"></div>
                     </div>
                 </div>
-
-                <!-- Explanations Area -->
                 <div id="explanation-area" class="mt-5 hidden">
                     <h4 class="text-base font-semibold text-gray-700 dark:text-gray-200 mb-2">Explanations</h4>
                     <ul id="explanation-list" class="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300 text-sm"></ul>
@@ -160,12 +149,15 @@
             <div>
                 <label for="api-key-input" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Google AI API Key</label>
                 <input type="password" id="api-key-input" placeholder="Enter your API Key" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500">
-                <p class="text-xs text-gray-500 mt-2">Get a key from <a href="https://aistudio.google.com/keys" target="_blank" class="text-primary-600 hover:underline">Google AI Studio</a>. Your key is saved in your browser's local storage.</p>
+                <p class="text-xs text-gray-500 mt-2">Get a key from <a href="https://aistudio.google.com/keys" target="_blank" class="text-primary-600 hover:underline">Google AI Studio</a>. Your key is saved in your browser.</p>
             </div>
             <div class="mt-6 flex justify-end">
                 <button id="close-modal-btn" class="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700">Done</button>
             </div>
         </div>
     </div>
+    
+    <!-- The working script goes here -->
+    <script src="script.js"></script>
 </body>
 </html>
