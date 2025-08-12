@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = getEl('settings-modal');
     const closeModalBtn = getEl('close-modal-btn');
     const apiKeyInput = getEl('api-key-input');
-    // Correctly select the modal overlay by its class from the HTML
     const modalOverlay = settingsModal.querySelector('.modal-overlay');
 
     // --- Constants and State ---
@@ -36,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Functions ---
     const updateButtonState = () => {
-        if (spinner.classList.contains('hidden')) { // Only update if not loading
+        if (spinner.classList.contains('hidden')) {
             const hasText = inputText.value.trim().length > 0;
             const hasApiKey = apiKey.trim().length > 0;
             let btnText = "Check Text";
@@ -73,14 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyTheme = (theme) => {
         const sunIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>`;
         const moonIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>`;
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        document.documentElement.className = theme === 'dark' ? 'dark' : 'light';
         themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
     };
 
+    // --- Main API Call Logic (FIXED PROMPT) ---
     const handleApiCheck = async () => {
         if (inputText.value.length > MAX_CHARS) {
             showMessage(`Text exceeds the maximum length of ${MAX_CHARS} characters.`);
@@ -95,15 +91,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const makeConcise = concisenessCheck.checked;
         const explainCorrections = explainCorrectionsCheck.checked;
 
-        let prompt = `You are an expert editor. Correct the following text for grammar, spelling, and punctuation.`;
-        if (formality !== 'general') prompt += ` Adjust the tone for ${formality} formality.`;
-        if (makeConcise) prompt += ` Make the text more concise.`;
-        if (explainCorrections) {
-            prompt += ` Return your response as a valid JSON object with two keys: "correctedText" (string) and "explanations" (an array of strings, where each string is a brief explanation for a key change).`;
+        // --- NEW, STRICTER PROMPT TO PREVENT TRANSLATION ---
+        let prompt = `You are a strict proofreading assistant. Your only task is to correct grammar, spelling, and punctuation errors.
+
+**CRITICAL RULES:**
+1.  **DO NOT TRANSLATE.** You must respond in the exact same language as the original text provided below.
+2.  Preserve the original meaning of the text. Do not add new ideas or remove essential information.
+3.  Maintain original formatting like line breaks unless a correction requires it.
+
+**OPTIONS:**`;
+
+        if (formality !== 'general' || makeConcise) {
+            if (formality !== 'general') {
+                prompt += `\n- Adjust the tone for a '${formality}' style, but stay in the original language.`;
+            }
+            if (makeConcise) {
+                prompt += `\n- Make the text more concise where possible without losing meaning.`;
+            }
         } else {
-            prompt += ` Return only the corrected text as a raw string.`;
+            prompt += `\n- No special options selected. Perform standard corrections only.`;
         }
-        prompt += `\n\nOriginal Text:\n---\n${text}`;
+
+        prompt += "\n\n**OUTPUT FORMAT:**";
+        if (explainCorrections) {
+            prompt += `\nReturn a single, valid JSON object with two keys: "correctedText" (the corrected string) and "explanations" (an array of strings explaining the main changes).`;
+        } else {
+            prompt += `\nReturn ONLY the corrected text as a raw string, with no additional commentary or formatting.`;
+        }
+        prompt += `\n\n--- ORIGINAL TEXT TO CORRECT ---\n${text}`;
+        // --- END OF NEW PROMPT ---
 
         try {
             const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
@@ -170,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization and Event Listeners ---
     function init() {
-        // Modal Listeners
         const openModal = () => settingsModal.classList.remove('hidden');
         const closeModal = () => {
             const newApiKey = apiKeyInput.value.trim();
@@ -185,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModalBtn.addEventListener('click', closeModal);
         modalOverlay.addEventListener('click', closeModal);
 
-        // Theme Listener
         themeToggle.addEventListener('click', () => {
             const isDark = document.documentElement.classList.contains('dark');
             const newTheme = isDark ? 'light' : 'dark';
@@ -193,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
             applyTheme(newTheme);
         });
 
-        // Input Listeners
         inputText.addEventListener('input', () => {
             const charCount = inputText.value.length;
             inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
@@ -209,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
             inputText.dispatchEvent(new Event('input'));
         });
 
-        // Tab Listeners
         const switchTab = (activeTab) => {
             const isCorrected = activeTab === 'corrected';
             panelCorrected.classList.toggle('hidden', !isCorrected);
@@ -226,10 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tabCorrected.addEventListener('click', () => switchTab('corrected'));
         tabDiff.addEventListener('click', () => switchTab('diff'));
 
-        // Main Action Button Listener
         checkBtn.addEventListener('click', handleApiCheck);
 
-        // Copy Button Listener
         copyOutputBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
                 const originalTitle = copyOutputBtn.title;
@@ -238,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // --- Initial Page Load Setup ---
         const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         applyTheme(initialTheme);
         apiKeyInput.value = apiKey;
