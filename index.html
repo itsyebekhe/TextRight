@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TextRight - A Working Grammar Checker</title>
-    <meta name="description" content="A simple, clean, and fully functional grammar checker powered by Google Gemini.">
+    <title>TextRight - Advanced Grammar Checker</title>
+    <meta name="description" content="An advanced, functional grammar checker with model selection, powered by Google Gemini.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Custom Tailwind Config -->
@@ -48,11 +48,11 @@
                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">TextRight</h1>
             </div>
             <div class="flex items-center space-x-2">
-                <button id="settings-btn" title="API Key Settings" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                <button id="settings-btn" title="Settings" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
                 <button id="theme-toggle" title="Toggle Theme" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <!-- Icons are managed by JS -->
+                    <!-- Icons managed by JS -->
                 </button>
             </div>
         </header>
@@ -100,7 +100,6 @@
                 </div>
             </div>
             
-            <!-- Action Button -->
             <div class="pt-2">
                 <button id="check-btn" class="w-full flex items-center justify-center py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed">
                     <div id="spinner" class="hidden animate-spin h-5 w-5 mr-3 border-t-2 border-b-2 border-white rounded-full"></div>
@@ -108,10 +107,8 @@
                 </button>
             </div>
             
-            <!-- Message Area -->
             <div id="message-area" class="py-2"></div>
 
-            <!-- Results Card -->
             <div id="results-card" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Result</h3>
@@ -144,20 +141,32 @@
     <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="modal-overlay fixed inset-0 transition-opacity"></div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 z-10">
-            <h2 class="text-xl font-bold mb-4">Settings</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 z-10 space-y-6">
+            <h2 class="text-xl font-bold">Settings</h2>
+            
+            <!-- Model Selection -->
+            <div>
+                <label for="model-select" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">AI Model</label>
+                <select id="model-select" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500">
+                    <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Default)</option>
+                    <option value="gemini-pro">Gemini 1.0 Pro</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-2">Different models have varying speeds and capabilities.</p>
+            </div>
+
+            <!-- API Key Input -->
             <div>
                 <label for="api-key-input" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Google AI API Key</label>
                 <input type="password" id="api-key-input" placeholder="Enter your API Key" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500">
                 <p class="text-xs text-gray-500 mt-2">Get a key from <a href="https://aistudio.google.com/keys" target="_blank" class="text-primary-600 hover:underline">Google AI Studio</a>. Your key is saved in your browser.</p>
             </div>
+
             <div class="mt-6 flex justify-end">
                 <button id="close-modal-btn" class="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700">Done</button>
             </div>
         </div>
     </div>
     
-    <!-- The working script goes here -->
     <script src="script.js"></script>
 </body>
 </html>
