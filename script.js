@@ -1,212 +1,176 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Helper function to get elements by ID
+    // --- Element Selectors ---
     const getEl = (id) => document.getElementById(id);
-
-    // --- DOM Element References ---
-    const checkForm = getEl('check-form');
-    const apiKeyInput = getEl('api-key');
-    const inputTextarea = getEl('input-text');
-    const outputCorrectedTextarea = getEl('output-corrected');
-    const outputDiffDiv = getEl('output-diff');
+    const inputText = getEl('input-text');
+    const inputStats = getEl('input-stats');
     const checkBtn = getEl('check-btn');
     const checkBtnText = getEl('check-btn-text');
-    const spinner = checkBtn.querySelector('.spinner');
-
-    // Buttons
-    const copyInputBtn = getEl('copy-input-btn');
+    const spinner = getEl('spinner');
     const clearInputBtn = getEl('clear-input-btn');
-    const copyCorrectedBtn = getEl('copy-btn');
-    const themeToggleBtn = getEl('theme-toggle');
-    const togglePasswordBtn = getEl('toggle-password-btn');
-
-    // Icons for password visibility
-    const eyeIconOpen = getEl('eye-icon-open');
-    const eyeIconClosed = getEl('eye-icon-closed');
-    
-    // Tabs
-    const tabCorrected = getEl('tab-corrected');
-    const tabDiff = getEl('tab-diff');
-    const outputCorrectedContent = getEl('output-corrected-content');
-    const outputDiffContent = getEl('output-diff-content');
-
-    // Displays
-    const inputStatsSpan = getEl('input-stats');
+    const resultsCard = getEl('results-card');
+    const messageArea = getEl('message-area');
+    const outputCorrected = getEl('output-corrected');
+    const outputDiff = getEl('output-diff');
+    const copyOutputBtn = getEl('copy-output-btn');
     const explanationArea = getEl('explanation-area');
     const explanationList = getEl('explanation-list');
-    const errorMessageDiv = getEl('error-message');
-    const successMessageDiv = getEl('success-message');
+    const tabCorrected = getEl('tab-corrected');
+    const tabDiff = getEl('tab-diff');
+    const panelCorrected = getEl('panel-corrected');
+    const panelDiff = getEl('panel-diff');
+    // Options
+    const formalitySelect = getEl('formality-select');
+    const concisenessCheck = getEl('conciseness-check');
+    const explainCorrectionsCheck = getEl('explain-corrections-check');
+    // Theme
+    const themeToggle = getEl('theme-toggle');
+    // Modal
+    const settingsBtn = getEl('settings-btn');
+    const settingsModal = getEl('settings-modal');
+    const closeModalBtn = getEl('close-modal-btn');
+    const apiKeyInput = getEl('api-key-input');
+    const modalOverlay = settingsModal.querySelector('.modal-overlay');
 
-    // Checkboxes
-    const saveApiKeyCheckbox = getEl('save-api-key-checkbox');
-    const explainCorrectionsCheckbox = getEl('explain-corrections-check');
-
-    // Gemini API Configuration
     const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+    const MAX_CHARS = 5000;
 
-    // --- Utility Functions ---
-    const showMessage = (element, message, isError = true) => {
-        element.textContent = message;
-        element.classList.remove('hidden');
-        // Hide the other message type
-        (isError ? successMessageDiv : errorMessageDiv).classList.add('hidden');
+    // --- State Management ---
+    let apiKey = localStorage.getItem('googleApiKey') || '';
+
+    // --- General Functions ---
+    const updateButtonState = () => {
+        const hasText = inputText.value.trim().length > 0;
+        const hasApiKey = apiKey.trim().length > 0;
+        let btnText = "Check Text";
+        let disabled = false;
+
+        if (!hasApiKey) {
+            btnText = "API Key Required";
+            disabled = true;
+        } else if (!hasText) {
+            btnText = "Enter Text to Check";
+            disabled = true;
+        }
+        checkBtnText.textContent = btnText;
+        checkBtn.disabled = disabled;
     };
 
-    const hideMessages = () => {
-        errorMessageDiv.classList.add('hidden');
-        successMessageDiv.classList.add('hidden');
+    const showMessage = (message, type = 'danger') => {
+        const colors = type === 'danger' 
+            ? 'bg-danger-50 text-danger-700 dark:bg-danger-900 dark:text-danger-100' 
+            : 'bg-success-50 text-success-700 dark:bg-success-900 dark:text-success-100';
+        messageArea.innerHTML = `<div class="${colors} p-3 rounded-lg text-sm">${message}</div>`;
     };
 
-    const setButtonState = (button, enabled) => {
-        button.disabled = !enabled;
+    const clearMessage = () => {
+        messageArea.innerHTML = '';
     };
 
     const setLoading = (isLoading) => {
-        checkBtn.classList.toggle('loading', isLoading);
-        spinner.classList.toggle('hidden', !isLoading);
-        checkBtnText.textContent = isLoading ? 'Checking...' : 'Check Text';
-        // Keep the button disabled while loading, let validateForm handle re-enabling
-        setButtonState(checkBtn, !isLoading); 
-        if (!isLoading) {
-            validateForm(); // Re-validate to set correct button state after loading
+        if (isLoading) {
+            checkBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            checkBtnText.textContent = 'Checking...';
+        } else {
+            spinner.classList.add('hidden');
+            updateButtonState(); // This will set the correct text and disabled state
         }
     };
-    
-    // --- Theme Management ---
+
+    // --- Theme Handling ---
+    const sunIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>`;
+    const moonIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>`;
+
     const applyTheme = (theme) => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
-            getEl('theme-toggle').querySelector('.dark\\:hidden').classList.add('hidden');
-            getEl('theme-toggle').querySelector('.dark\\:block').classList.remove('hidden');
+            themeToggle.innerHTML = sunIcon;
         } else {
             document.documentElement.classList.remove('dark');
-            getEl('theme-toggle').querySelector('.dark\\:hidden').classList.remove('hidden');
-            getEl('theme-toggle').querySelector('.dark\\:block').classList.add('hidden');
+            themeToggle.innerHTML = moonIcon;
         }
     };
-    
-    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(savedTheme);
 
-    themeToggleBtn.addEventListener('click', () => {
+    themeToggle.addEventListener('click', () => {
         const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
         localStorage.setItem('theme', newTheme);
         applyTheme(newTheme);
     });
 
-    // --- Local Storage for API Key ---
-    if (localStorage.getItem('saveApiKey') === 'true') {
-        apiKeyInput.value = localStorage.getItem('apiKey') || '';
-        saveApiKeyCheckbox.checked = true;
-    }
-
-    saveApiKeyCheckbox.addEventListener('change', () => {
-        localStorage.setItem('saveApiKey', String(saveApiKeyCheckbox.checked));
-        if (saveApiKeyCheckbox.checked) {
-            localStorage.setItem('apiKey', apiKeyInput.value);
-        } else {
-            localStorage.removeItem('apiKey');
+    // --- Modal Handling ---
+    const openModal = () => settingsModal.classList.remove('hidden');
+    const closeModal = () => {
+        apiKey = apiKeyInput.value;
+        if (apiKey) {
+            localStorage.setItem('googleApiKey', apiKey);
         }
-    });
+        settingsModal.classList.add('hidden');
+        updateButtonState();
+    };
+    
+    settingsBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', closeModal);
 
-    apiKeyInput.addEventListener('input', () => {
-        if (saveApiKeyCheckbox.checked) {
-            localStorage.setItem('apiKey', apiKeyInput.value);
-        }
-        validateForm();
-    });
-
-    // --- Input Text Area Logic ---
-    const updateInputStats = () => {
-        const text = inputTextarea.value;
-        const charCount = text.length;
-        const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-        inputStatsSpan.textContent = `Words: ${wordCount} | Chars: ${charCount} / 5000`;
+    // --- Input Handling ---
+    inputText.addEventListener('input', () => {
+        const charCount = inputText.value.length;
+        inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
+        inputStats.classList.toggle('text-red-500', charCount > MAX_CHARS);
         setButtonState(clearInputBtn, charCount > 0);
-        setButtonState(copyInputBtn, charCount > 0);
-        validateForm();
-    };
-
-    inputTextarea.addEventListener('input', updateInputStats);
-
-    // --- Button Logic ---
-    const validateForm = () => {
-        const hasText = inputTextarea.value.trim().length > 0;
-        const hasApiKey = apiKeyInput.value.trim().length > 0;
-
-        if (checkBtn.classList.contains('loading')) return; // Don't change state while loading
-
-        if (!hasApiKey) {
-            setButtonState(checkBtn, false);
-            checkBtnText.textContent = 'Enter API Key';
-        } else if (!hasText) {
-            setButtonState(checkBtn, false);
-            checkBtnText.textContent = 'Enter Text Above';
-        } else {
-            setButtonState(checkBtn, true);
-            checkBtnText.textContent = 'Check Text';
-        }
-    };
+        updateButtonState();
+    });
 
     clearInputBtn.addEventListener('click', () => {
-        inputTextarea.value = '';
-        outputCorrectedTextarea.value = '';
-        outputDiffDiv.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Changes will be highlighted here...</div>';
-        explanationArea.classList.add('hidden');
-        hideMessages();
-        setButtonState(copyCorrectedBtn, false);
-        updateInputStats();
+        inputText.value = '';
+        resultsCard.classList.add('hidden');
+        clearMessage();
+        inputText.dispatchEvent(new Event('input')); // Trigger input event to update stats/buttons
     });
 
-    const showCopyFeedback = (button) => {
-        const originalText = button.innerHTML;
-        button.innerHTML = 'Copied!';
-        setTimeout(() => {
-            button.innerHTML = originalText;
-        }, 2000);
-    }
-    
-    copyInputBtn.addEventListener('click', () => navigator.clipboard.writeText(inputTextarea.value).then(() => showCopyFeedback(copyInputBtn)));
-    copyCorrectedBtn.addEventListener('click', () => navigator.clipboard.writeText(outputCorrectedTextarea.value).then(() => showCopyFeedback(copyCorrectedBtn)));
-    
-    togglePasswordBtn.addEventListener('click', () => {
-        const isPassword = apiKeyInput.type === 'password';
-        apiKeyInput.type = isPassword ? 'text' : 'password';
-        eyeIconOpen.classList.toggle('hidden', !isPassword);
-        eyeIconClosed.classList.toggle('hidden', isPassword);
-    });
+    // --- Tab Handling ---
+    const switchTab = (activeTab) => {
+        const isCorrected = activeTab === 'corrected';
+        tabCorrected.classList.toggle('border-primary-500', isCorrected);
+        tabCorrected.classList.toggle('text-primary-600', isCorrected);
+        tabCorrected.classList.toggle('border-transparent', !isCorrected);
+        tabCorrected.classList.toggle('text-gray-500', !isCorrected);
 
-    // --- Tab Switching Logic ---
-    [tabCorrected, tabDiff].forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            document.querySelector('.tab-btn.active').classList.remove('active');
-            e.currentTarget.classList.add('active');
-            
-            document.querySelector('.output-content.active').classList.remove('active');
-            const targetContentId = e.currentTarget.getAttribute('aria-controls');
-            getEl(targetContentId).classList.add('active');
-        });
-    });
+        tabDiff.classList.toggle('border-primary-500', !isCorrected);
+        tabDiff.classList.toggle('text-primary-600', !isCorrected);
+        tabDiff.classList.toggle('border-transparent', isCorrected);
+        tabDiff.classList.toggle('text-gray-500', isCorrected);
 
-    // --- Main Form Submission ---
-    checkForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideMessages();
+        panelCorrected.classList.toggle('hidden', !isCorrected);
+        panelDiff.classList.toggle('hidden', isCorrected);
+    };
+
+    tabCorrected.addEventListener('click', () => switchTab('corrected'));
+    tabDiff.addEventListener('click', () => switchTab('diff'));
+
+    // --- Main API Call Logic ---
+    checkBtn.addEventListener('click', async () => {
+        if (inputText.value.length > MAX_CHARS) {
+            showMessage(`Text exceeds the maximum length of ${MAX_CHARS} characters.`);
+            return;
+        }
+
         setLoading(true);
+        clearMessage();
+        resultsCard.classList.add('hidden');
 
-        const formData = new FormData(checkForm);
-        const text = formData.get('text');
-        const apiKey = formData.get('api_key');
-        const formality = formData.get('formality');
-        const makeConcise = formData.has('make_concise');
-        const explainCorrections = formData.has('explain_corrections');
+        const text = inputText.value;
+        const formality = formalitySelect.value;
+        const makeConcise = concisenessCheck.checked;
+        const explainCorrections = explainCorrectionsCheck.checked;
 
-        let prompt = `You are an expert editor. Please correct the following text for grammar, spelling, and punctuation. Maintain the original meaning and tone.`;
-        if (formality !== 'general') prompt += ` The target formality is ${formality}.`;
-        if (makeConcise) prompt += ` Make the text more concise where possible without losing meaning.`;
+        let prompt = `You are an expert editor. Correct the following text for grammar, spelling, and punctuation.`;
+        if (formality !== 'general') prompt += ` Adjust the tone for ${formality} formality.`;
+        if (makeConcise) prompt += ` Make the text more concise.`;
         if (explainCorrections) {
-            prompt += ` Return the result as a valid JSON object with two keys: "correctedText" (a string containing the full corrected text) and "explanations" (an array of strings, where each string is a brief explanation for a key change).`;
+            prompt += ` Return your response as a valid JSON object with two keys: "correctedText" (string) and "explanations" (an array of strings, where each string is a brief explanation for a key change).`;
         } else {
-            prompt += ` Just return the corrected text itself, with no extra formatting or explanation.`;
+            prompt += ` Return only the corrected text as a raw string.`;
         }
         prompt += `\n\nOriginal Text:\n---\n${text}`;
 
@@ -216,74 +180,80 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: "application/json" }
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 4096,
+                        // Request JSON response only when needed
+                        responseMimeType: explainCorrections ? "application/json" : "text/plain",
+                    }
                 }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `Request failed with status: ${response.status}`);
             }
 
-            const data = await response.json();
-            const resultText = data.candidates[0].content.parts[0].text;
+            const responseData = await response.json();
+            const resultText = responseData.candidates[0].content.parts[0].text;
             
-            let correctedText, explanations = [];
+            let correctedText = "";
+            let explanations = [];
 
             if (explainCorrections) {
-                const jsonResult = JSON.parse(resultText); // Directly parse, as we requested JSON mime type
+                const jsonResult = JSON.parse(resultText);
                 correctedText = jsonResult.correctedText || "";
                 explanations = jsonResult.explanations || [];
             } else {
                 correctedText = resultText;
             }
 
-            outputCorrectedTextarea.value = correctedText;
-            setButtonState(copyCorrectedBtn, correctedText.length > 0);
-            showMessage(successMessageDiv, 'Text successfully checked!', false);
-            
-            // Generate and display diff
-            const diff = Diff.diffWordsWithSpace(text, correctedText);
+            // --- Update UI with Results ---
+            outputCorrected.textContent = correctedText;
+            outputDiff.innerHTML = ''; // Clear previous
+            const diff = Diff.diffWords(text, correctedText);
             const fragment = document.createDocumentFragment();
             diff.forEach(part => {
-                const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
-                node.appendChild(document.createTextNode(part.value));
-                fragment.appendChild(node);
+                const el = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
+                el.appendChild(document.createTextNode(part.value));
+                fragment.appendChild(el);
             });
-            outputDiffDiv.innerHTML = '';
-            outputDiffDiv.appendChild(fragment);
+            outputDiff.appendChild(fragment);
 
-            // Display explanations
             if (explainCorrections && explanations.length > 0) {
-                explanationList.innerHTML = explanations.map(item => `<li class="text-gray-700 dark:text-gray-300">${item}</li>`).join('');
+                explanationList.innerHTML = explanations.map(item => `<li>${item}</li>`).join('');
                 explanationArea.classList.remove('hidden');
             } else {
                 explanationArea.classList.add('hidden');
             }
 
+            resultsCard.classList.remove('hidden');
+            showMessage('Check complete!', 'success');
+
         } catch (error) {
             console.error('Error:', error);
-            let errorMessage = `An error occurred: ${error.message}.`;
-            if (error instanceof SyntaxError) {
-                 errorMessage += ' The AI response was not in the expected format. Try the request again.'
-            }
-            showMessage(errorMessageDiv, errorMessage);
+            showMessage(`An error occurred: ${error.message}. Please check your API key and try again.`);
         } finally {
             setLoading(false);
         }
     });
-    
-    // --- Keyboard Shortcut ---
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-             event.preventDefault();
-             if (!checkBtn.disabled) {
-                 checkBtn.click();
-             }
-        }
+
+    // --- Copy to Clipboard ---
+    copyOutputBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
+            const originalTitle = copyOutputBtn.title;
+            copyOutputBtn.title = 'Copied!';
+            setTimeout(() => { copyOutputBtn.title = originalTitle; }, 2000);
+        });
     });
 
-    // --- Initial State Setup ---
-    getEl('current-year').textContent = new Date().getFullYear();
-    updateInputStats();
+    // --- Initial Load ---
+    const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(initialTheme);
+    apiKeyInput.value = apiKey;
+    updateButtonState();
+    if (!apiKey) {
+        showMessage('Welcome! Please enter your Google AI API key in the settings to get started.');
+        openModal();
+    }
 });
