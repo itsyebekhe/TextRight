@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = getEl('settings-modal');
     const closeModalBtn = getEl('close-modal-btn');
     const apiKeyInput = getEl('api-key-input');
-    // Correctly select the modal overlay by its ID
-    const modalOverlay = getEl('modal-overlay');
+    // Correctly select the modal overlay by its class from the HTML
+    const modalOverlay = settingsModal.querySelector('.modal-overlay');
 
     // --- Constants and State ---
     const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
@@ -36,16 +36,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Functions ---
     const updateButtonState = () => {
-        if (!spinner.classList.contains('hidden')) return; // Don't update while loading
-        const hasText = inputText.value.trim().length > 0;
-        const hasApiKey = apiKey.trim().length > 0;
-        checkBtn.disabled = !hasText || !hasApiKey;
-        if (!hasApiKey) {
-            checkBtnText.textContent = "API Key Required";
-        } else if (!hasText) {
-            checkBtnText.textContent = "Enter Text to Check";
-        } else {
-            checkBtnText.textContent = "Check Text";
+        if (spinner.classList.contains('hidden')) { // Only update if not loading
+            const hasText = inputText.value.trim().length > 0;
+            const hasApiKey = apiKey.trim().length > 0;
+            let btnText = "Check Text";
+            let disabled = false;
+
+            if (!hasApiKey) {
+                btnText = "API Key Required";
+                disabled = true;
+            } else if (!hasText) {
+                btnText = "Enter Text to Check";
+                disabled = true;
+            }
+            checkBtnText.textContent = btnText;
+            checkBtn.disabled = disabled;
         }
     };
 
@@ -68,7 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyTheme = (theme) => {
         const sunIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>`;
         const moonIcon = `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>`;
-        document.documentElement.className = theme;
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
         themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
     };
 
@@ -159,83 +168,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Event Listeners and Initialization ---
+    // --- Initialization and Event Listeners ---
+    function init() {
+        // Modal Listeners
+        const openModal = () => settingsModal.classList.remove('hidden');
+        const closeModal = () => {
+            const newApiKey = apiKeyInput.value.trim();
+            if (newApiKey) {
+                localStorage.setItem('googleApiKey', newApiKey);
+                apiKey = newApiKey;
+            }
+            settingsModal.classList.add('hidden');
+            updateButtonState();
+        };
+        settingsBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', closeModal);
 
-    // Modal listeners
-    settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-    
-    const closeModal = () => {
-        const newApiKey = apiKeyInput.value.trim();
-        if (newApiKey) {
-            localStorage.setItem('googleApiKey', newApiKey);
-            apiKey = newApiKey;
-        }
-        settingsModal.classList.add('hidden');
-        updateButtonState();
-    };
-    closeModalBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', closeModal);
-
-    // Theme toggle
-    themeToggle.addEventListener('click', () => {
-        const newTheme = document.documentElement.className.includes('dark') ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme);
-        applyTheme(newTheme);
-    });
-
-    // Input text area listeners
-    inputText.addEventListener('input', () => {
-        const charCount = inputText.value.length;
-        inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
-        inputStats.classList.toggle('text-red-500', charCount > MAX_CHARS);
-        clearInputBtn.disabled = charCount === 0;
-        updateButtonState();
-    });
-
-    clearInputBtn.addEventListener('click', () => {
-        inputText.value = '';
-        resultsCard.classList.add('hidden');
-        messageArea.innerHTML = '';
-        inputText.dispatchEvent(new Event('input'));
-    });
-
-    // Tab listeners
-    const switchTab = (activeTab) => {
-        const isCorrected = activeTab === 'corrected';
-        panelCorrected.classList.toggle('hidden', !isCorrected);
-        panelDiff.classList.toggle('hidden', isCorrected);
-        tabCorrected.classList.toggle('border-primary-500', isCorrected);
-        tabCorrected.classList.toggle('text-primary-600', isCorrected);
-        tabCorrected.classList.toggle('border-transparent', !isCorrected);
-        tabCorrected.classList.toggle('text-gray-500', !isCorrected);
-        tabDiff.classList.toggle('border-primary-500', !isCorrected);
-        tabDiff.classList.toggle('text-primary-600', !isCorrected);
-        tabDiff.classList.toggle('border-transparent', isCorrected);
-        tabDiff.classList.toggle('text-gray-500', isCorrected);
-    };
-    tabCorrected.addEventListener('click', () => switchTab('corrected'));
-    tabDiff.addEventListener('click', () => switchTab('diff'));
-
-    // Main action button
-    checkBtn.addEventListener('click', handleApiCheck);
-
-    // Copy button
-    copyOutputBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
-            const originalTitle = copyOutputBtn.title;
-            copyOutputBtn.title = 'Copied!';
-            setTimeout(() => { copyOutputBtn.title = originalTitle; }, 2000);
+        // Theme Listener
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
         });
-    });
 
-    // --- Initial page load setup ---
-    const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(initialTheme);
-    apiKeyInput.value = apiKey;
-    updateButtonState();
-    inputText.dispatchEvent(new Event('input'));
+        // Input Listeners
+        inputText.addEventListener('input', () => {
+            const charCount = inputText.value.length;
+            inputStats.textContent = `${charCount} / ${MAX_CHARS} characters`;
+            inputStats.classList.toggle('text-red-500', charCount > MAX_CHARS);
+            clearInputBtn.disabled = charCount === 0;
+            updateButtonState();
+        });
 
-    if (!apiKey) {
-        showMessage('Welcome! Please enter your Google AI API key in the settings to get started.');
+        clearInputBtn.addEventListener('click', () => {
+            inputText.value = '';
+            resultsCard.classList.add('hidden');
+            messageArea.innerHTML = '';
+            inputText.dispatchEvent(new Event('input'));
+        });
+
+        // Tab Listeners
+        const switchTab = (activeTab) => {
+            const isCorrected = activeTab === 'corrected';
+            panelCorrected.classList.toggle('hidden', !isCorrected);
+            panelDiff.classList.toggle('hidden', isCorrected);
+            tabCorrected.classList.toggle('border-primary-500', isCorrected);
+            tabCorrected.classList.toggle('text-primary-600', isCorrected);
+            tabCorrected.classList.toggle('border-transparent', !isCorrected);
+            tabCorrected.classList.toggle('text-gray-500', !isCorrected);
+            tabDiff.classList.toggle('border-primary-500', !isCorrected);
+            tabDiff.classList.toggle('text-primary-600', !isCorrected);
+            tabDiff.classList.toggle('border-transparent', isCorrected);
+            tabDiff.classList.toggle('text-gray-500', isCorrected);
+        };
+        tabCorrected.addEventListener('click', () => switchTab('corrected'));
+        tabDiff.addEventListener('click', () => switchTab('diff'));
+
+        // Main Action Button Listener
+        checkBtn.addEventListener('click', handleApiCheck);
+
+        // Copy Button Listener
+        copyOutputBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(outputCorrected.textContent).then(() => {
+                const originalTitle = copyOutputBtn.title;
+                copyOutputBtn.title = 'Copied!';
+                setTimeout(() => { copyOutputBtn.title = originalTitle; }, 2000);
+            });
+        });
+
+        // --- Initial Page Load Setup ---
+        const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(initialTheme);
+        apiKeyInput.value = apiKey;
+        updateButtonState();
+        inputText.dispatchEvent(new Event('input'));
+
+        if (!apiKey) {
+            showMessage('Welcome! Please enter your Google AI API key in the settings to get started.');
+        }
     }
+
+    // Run the application
+    init();
 });
